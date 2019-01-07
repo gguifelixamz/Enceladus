@@ -235,7 +235,8 @@ if registration_smt:
             utils.REGISTERED_SMT_SERVER_DATA_FILE_NAME
         )
     alive = registration_smt.is_responsive()
-    if alive:
+    existingec2 = utils.compare_instance_data()
+    if alive and existingec2:
         msg = 'Instance is registered, and SMT server is reachable, '
         msg += 'nothing to do'
         # The cache data may have been cleared, write if necessary
@@ -389,6 +390,7 @@ elif (os.path.exists(register12) and os.access(register12, os.X_OK)):
 
     # Register the base product first
     base_registered = False
+    utils.store_instance_data()
     failed_smts = []
     while not base_registered:
         cmd = [register12, '--url']

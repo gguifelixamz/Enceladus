@@ -122,6 +122,32 @@ def clean_smt_cache():
 
 
 # ----------------------------------------------------------------------------
+def compare_instance_data():
+    """Compare instance metadata for registration process"""
+    logging.info('Comparing instance metadata')
+    ec2instancedatafile = REGISTRATION_DATA_DIR + 'ec2info.obj'
+    if os.path.isfile(ec2instancedatafile):
+       logging.info('Instance metadata file exists, reading its contents')
+       ec2instancedata = open(ec2instancedatafile,'r')
+       existingec2 = ec2instancedata.read()
+       ec2instancedata.close
+       existingec2 = existingec2.rstrip('\r\n')
+       logging.info('Stored instance metadata: %s' % existingec2)
+       cmd = ['/usr/bin/ec2metadata', '--instance-id']
+       currentec2instanceid, errors = exec_subprocess(cmd, return_output=True)
+       currentec2instanceid_str = currentec2instanceid.decode('utf-8')
+       currentec2instanceid_str = currentec2instanceid_str.rstrip('\r\n')
+       logging.info('Got metadata from running instance: %s' % currentec2instanceid_str)
+       if (currentec2instanceid_str != existingec2):
+         logging.info('Instance matadata is different, trying new registration')
+         return 0
+       else:
+         return 1
+    else:
+       logging.info("Instance metadata file is not available, trying new registration")
+       return 0
+
+# ----------------------------------------------------------------------------
 def enable_repository(repo_name):
     """Enable the given repository"""
 
@@ -613,6 +639,20 @@ def start_logging():
         print('Could not open log file "', log_filename, '" for writing.')
         sys.exit(1)
 
+
+# ----------------------------------------------------------------------------
+def store_instance_data():
+    """Store instance metadata information"""
+    ec2instancedatafile = REGISTRATION_DATA_DIR + 'ec2info.obj'
+    logging.info('Storing instance metadata information')
+    cmd = ['/usr/bin/ec2metadata', '--instance-id']
+    ec2instanceid, errors = exec_subprocess(cmd, return_output=True)
+    ec2instanceid_str = ec2instanceid.decode('utf-8')
+    ec2instancedata = open(ec2instancedatafile,'w')
+    ec2instancedata.write(ec2instanceid_str)
+    os.fchmod(ec2instancedata.fileno(), stat.S_IREAD | stat.S_IWRITE)
+    ec2instancedata.close
+    return;
 
 # ----------------------------------------------------------------------------
 def store_smt_data(smt_data_file_path, smt):
